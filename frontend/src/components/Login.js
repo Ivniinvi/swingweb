@@ -30,7 +30,7 @@ function Login() {
     if (auth && auth.login) {
       const success = await auth.login(values.password);
       if (success) {
-        navigate('/');
+        navigate('/checkmember');  // Change this line
       } else {
         form.setError('password', { type: 'manual', message: 'Incorrect password' });
       }
