@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { formatPUID } from '../utils/puidFormatter';
+import { Button } from "@/src/components/ui/button"
+import { Input } from "@/src/components/ui/input"
+import { Label } from "@/src/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/src/components/ui/form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+
+const formSchema = z.object({
+  term: z.string().min(1, "Please select a term"),
+  puid: z.string().regex(/^\d{10}$/, "PUID must be 10 digits"),
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+})
 
 function Waivers() {
   const [terms, setTerms] = useState([]);
-  const [selectedTerm, setSelectedTerm] = useState('');
-  const [puid, setPuid] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      term: "",
+      puid: "",
+      name: "",
+      email: "",
+    },
+  })
 
   useEffect(() => {
     fetchTerms();
@@ -29,27 +50,22 @@ function Waivers() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedTerm || !puid) {
-      alert('Please select a term and enter a PUID');
-      return;
-    }
+  const onSubmit = async (values) => {
     setIsLoading(true);
     setError(null);
     try {
-      const formattedPUID = formatPUID(puid);
+      const formattedPUID = formatPUID(values.puid);
       // First, create or update the member
       const memberResponse = await api.post('/members', {
         puid: formattedPUID,
-        name,
-        email,
+        name: values.name,
+        email: values.email,
       });
       console.log('Member created/updated:', memberResponse.data);
 
       // Then, create the waiver
       const waiverResponse = await api.post('/waivers', {
-        termName: selectedTerm,
+        termName: values.term,
         puid: formattedPUID,
       });
       setResult({
@@ -65,53 +81,80 @@ function Waivers() {
     }
   };
 
-  const handlePuidChange = (e) => {
-    const value = e.target.value;
-    // Only allow numeric input
-    if (/^\d*$/.test(value)) {
-      setPuid(value);
-    }
-  };
-
   return (
-    <div>
-      <h1>Waivers</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <select
-          value={selectedTerm}
-          onChange={(e) => setSelectedTerm(e.target.value)}
-          disabled={isLoading}
-        >
-          <option value="">Select a term</option>
-          {terms.map((term) => (
-            <option key={term.name} value={term.name}>
-              {term.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          value={puid}
-          onChange={handlePuidChange}
-          placeholder="Enter PUID"
-          required
-          maxLength={10}
-        />
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter Name"
-        />
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter Email"
-        />
-        <button type="submit" disabled={isLoading || !selectedTerm || !puid}>Submit</button>
-      </form>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Waivers</h1>
+      {error && <p className="text-red-500">{error}</p>}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="term"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Term</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a term" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {terms.map((term) => (
+                        <SelectItem key={term.name} value={term.name}>
+                          {term.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="puid"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>PUID</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter PUID" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter Name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter Email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <Button type="submit" disabled={isLoading}>Submit</Button>
+        </form>
+      </Form>
       {isLoading && <p>Processing...</p>}
       {result && (
         <div>
