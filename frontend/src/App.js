@@ -23,7 +23,7 @@ function AppRoutes() {
       <Route path="/waivers" element={<ProtectedRoute><Waivers /></ProtectedRoute>} />
       <Route path="/checkmember" element={<CheckMember />} />
       <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-      <Route path="/" element={<Navigate to="/checkmember" />} />
+      <Route path="/" element={<Navigate to="/login" />} />
     </Routes>
   );
 }

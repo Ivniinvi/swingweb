@@ -10,7 +10,7 @@ app.use(express.json());
 
 const pool = new Pool({
   user: 'swingwebinterface',
-  host: '35.222.116.216',
+  host: 'localhost',
   database: 'swing',
   password: 'swingpass',
   port: 5432,
