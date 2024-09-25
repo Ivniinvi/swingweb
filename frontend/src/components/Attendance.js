@@ -1,22 +1,38 @@
 import React, { useState } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from "@/src/components/ui/button"
+import { Input } from "@/src/components/ui/input"
 import api from '../api';
 
+const schema = z.object({
+  date: z.string().min(1, "Date is required"),
+  adminPassword: z.string().min(1, "Admin password is required"),
+});
+
 function Attendance() {
-  const [date, setDate] = useState('');
   const [attendanceData, setAttendanceData] = useState([]);
   const [error, setError] = useState('');
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
+  });
 
-  const handleDateChange = (e) => {
-    setDate(e.target.value);
-  };
-
-  const fetchAttendance = async () => {
+  const fetchAttendance = async (data) => {
     try {
-      const response = await api.post('/admin/attendance', { date }, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      setAttendanceData(response.data);
-      setError('');
+      // First, authenticate as admin
+      const authResponse = await api.post('/admin/auth', { adminPassword: data.adminPassword });
+      if (authResponse.data.success) {
+        // If authentication successful, proceed to fetch attendance data
+        const response = await api.post('/admin/attendance', { 
+          date: data.date,
+          adminPassword: data.adminPassword  // Include admin password in this request as well
+        });
+        setAttendanceData(response.data);
+        setError('');
+      } else {
+        setError('Admin authentication failed');
+      }
     } catch (err) {
       console.error('Error fetching attendance:', err);
       setError('Failed to fetch attendance data');
@@ -24,22 +40,26 @@ function Attendance() {
   };
 
   return (
-    <div>
+    <div className="space-y-4">
       <h2 className="text-xl font-semibold mb-4">Attendance</h2>
-      <div className="mb-4">
-        <input
+      <form onSubmit={handleSubmit(fetchAttendance)} className="space-y-4">
+        <Input
           type="date"
-          value={date}
-          onChange={handleDateChange}
+          {...register('date')}
           className="border rounded p-2 mr-2"
         />
-        <button
-          onClick={fetchAttendance}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Fetch Attendance
-        </button>
-      </div>
+        {errors.date && <p className="text-red-500">{errors.date.message}</p>}
+
+        <Input 
+          type="password" 
+          placeholder="Admin Password" 
+          {...register('adminPassword')}
+        />
+        {errors.adminPassword && <p className="text-red-500">{errors.adminPassword.message}</p>}
+
+        <Button type="submit">Fetch Attendance</Button>
+      </form>
+      
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {attendanceData.length > 0 && (
         <table className="w-full border-collapse border">

@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/ta
 import ViewTable from './ViewTable';
 import AddTerm from './AddTerm';
 import ChangePassword from './ChangePassword';
-import Attendance from './Attendance';  // Add this line
+import Attendance from './Attendance';  
 
 function AdminPanel() {
   return (
@@ -14,12 +14,12 @@ function AdminPanel() {
           <TabsTrigger value="view-table">View Table</TabsTrigger>
           <TabsTrigger value="add-term">Add New Term</TabsTrigger>
           <TabsTrigger value="change-password">Change Password</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>  // Add this line
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
         </TabsList>
         <TabsContent value="view-table"><ViewTable /></TabsContent>
         <TabsContent value="add-term"><AddTerm /></TabsContent>
         <TabsContent value="change-password"><ChangePassword /></TabsContent>
-        <TabsContent value="attendance"><Attendance /></TabsContent>  // Add this line
+        <TabsContent value="attendance"><Attendance /></TabsContent>
       </Tabs>
     </div>
   );
