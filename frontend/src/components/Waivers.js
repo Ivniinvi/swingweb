@@ -12,7 +12,7 @@ import * as z from "zod"
 
 const formSchema = z.object({
   term: z.string().min(1, "Please select a term"),
-  puid: z.string().regex(/^\d{10}$/, "PUID must be 10 digits"),
+  puid: z.string().regex(/^\d{1,10}$/, "PUID must be 1-10 digits"),
   name: z.string().optional(),
   email: z.string().email().optional(),
 })
@@ -54,7 +54,8 @@ function Waivers() {
     setIsLoading(true);
     setError(null);
     try {
-      const formattedPUID = formatPUID(values.puid);
+      const paddedPUID = values.puid.padStart(10, '0');
+      const formattedPUID = formatPUID(paddedPUID);
       // First, create or update the member
       const memberResponse = await api.post('/members', {
         puid: formattedPUID,
@@ -119,7 +120,18 @@ function Waivers() {
                 <FormItem>
                   <FormLabel>PUID</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter PUID" {...field} />
+                    <Input
+                      {...field}
+                      placeholder="Enter PUID (1-10 digits)"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d*"
+                      maxLength={10}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        field.onChange(value);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

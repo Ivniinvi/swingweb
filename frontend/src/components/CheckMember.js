@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,13 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/ca
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
 
 const formSchema = z.object({
-  puid: z.string().regex(/^\d{10}$/, { message: "PUID must be 10 digits" })
+  puid: z.string().regex(/^\d{1,10}$/, { message: "PUID must be up to 10 digits" })
 });
 
 function CheckMember() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const lastSubmissionTime = useRef(0);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -30,7 +31,7 @@ function CheckMember() {
     setError(null);
     setResult(null);
     try {
-      const formattedPUID = formatPUID(puid);
+      const formattedPUID = formatPUID(puid.padStart(10, '0'));
       const response = await api.post('/checkmember', { puid: formattedPUID });
       setResult({ ...response.data, puid: formattedPUID });
     } catch (error) {
@@ -42,17 +43,32 @@ function CheckMember() {
     }
   };
 
+  const debouncedSubmit = useCallback((puid) => {
+    const now = Date.now();
+    if (now - lastSubmissionTime.current > 1000) {
+      lastSubmissionTime.current = now;
+      if (puid.length > 0) {
+        checkMembership(puid);
+      }
+    }
+  }, []);
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const currentPUID = form.getValues().puid;
+      debouncedSubmit(currentPUID);
+    }
+  };
+
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
       if (name === 'puid' && value.puid.length === 10) {
-        checkMembership(value.puid);
-      } else if (name === 'puid') {
-        setResult(null);
-        setError(null);
+        debouncedSubmit(value.puid);
       }
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, debouncedSubmit]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -99,6 +115,11 @@ function CheckMember() {
                         {...field}
                         placeholder="Enter PUID (10 digits)"
                         disabled={isLoading}
+                        onKeyDown={handleKeyDown}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          field.onChange(value.slice(0, 10));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

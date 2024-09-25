@@ -11,7 +11,7 @@ import { Button } from "@/src/components/ui/button";
 
 const formSchema = z.object({
   termName: z.string().min(1, "Please select a term"),
-  puid: z.string().regex(/^\d{10}$/, "PUID must be 10 digits")
+  puid: z.string().regex(/^\d{1,10}$/, "PUID must be 1-10 digits")
 });
 
 function Payments() {
@@ -44,7 +44,8 @@ function Payments() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.post('/payments', { ...values, puid: formatPUID(values.puid) });
+      const paddedPUID = values.puid.padStart(10, '0');
+      const response = await api.post('/payments', { ...values, puid: formatPUID(paddedPUID) });
       setResult(response.data);
     } catch (error) {
       setError(error.message);
@@ -93,7 +94,18 @@ function Payments() {
               <FormItem>
                 <FormLabel>PUID</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter PUID (10 digits)" />
+                  <Input
+                    {...field}
+                    placeholder="Enter PUID (1-10 digits)"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={10}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
