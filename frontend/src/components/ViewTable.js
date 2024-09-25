@@ -39,6 +39,28 @@ function ViewTable() {
     }
   };
 
+  const downloadCSV = () => {
+    if (!tableData || tableData.length === 0) return;
+
+    const headers = Object.keys(tableData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...tableData.map(row => headers.map(header => JSON.stringify(row[header])).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${schema.tableName}_data.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit(handleViewTable)} className="space-y-4">
@@ -67,20 +89,23 @@ function ViewTable() {
       </form>
 
       {tableData && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {Object.keys(tableData[0]).map(key => <TableHead key={key}>{key}</TableHead>)}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tableData.map((row, index) => (
-              <TableRow key={index}>
-                {Object.values(row).map((value, i) => <TableCell key={i}>{value}</TableCell>)}
+        <>
+          <Button onClick={downloadCSV}>Download CSV</Button>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Object.keys(tableData[0]).map(key => <TableHead key={key}>{key}</TableHead>)}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {tableData.map((row, index) => (
+                <TableRow key={index}>
+                  {Object.values(row).map((value, i) => <TableCell key={i}>{value}</TableCell>)}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
       )}
     </div>
   );
