@@ -382,6 +382,30 @@ app.post('/api/admin/changepassword', adminAuth, async (req, res) => {
   }
 });
 
+// Attendance route
+app.post('/api/admin/attendance', adminAuth, async (req, res) => {
+  const { date } = req.body;
+  
+  if (!date) {
+    return res.status(400).json({ error: 'Date is required' });
+  }
+
+  try {
+    const query = `
+      SELECT m.name, s.puid, s.timestamp
+      FROM swingdb.signins s
+      LEFT JOIN swingdb.members m ON s.puid = m.puid
+      WHERE DATE(s.timestamp) = $1
+      ORDER BY s.timestamp
+    `;
+    const result = await pool.query(query, [date]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching attendance:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
